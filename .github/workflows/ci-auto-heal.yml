@@ -23,8 +23,8 @@ jobs:
       run: npm install
 
     - name: Run tests (allow failure)
-      run: npx mocha --recursive --reporter spec
-      continue-on-error: true   # <-- important
+      run: npm test
+      continue-on-error: true
 
     - name: Run Auto-Healer
       run: python tools/heal.py --log logs/test.log --db healer/db.sqlite
