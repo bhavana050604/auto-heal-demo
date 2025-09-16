@@ -23,7 +23,7 @@ jobs:
       run: npm install
 
     - name: Run tests (allow failure)
-      run: npx mocha --recursive --reporter spec
+      run: npm test
       continue-on-error: true   # <-- important
 
     - name: Run Auto-Healer
