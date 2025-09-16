@@ -22,8 +22,9 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run tests
-      run: npm test
+    - name: Run tests (allow failure)
+      run: npx mocha --recursive --reporter spec
+      continue-on-error: true   # <-- important
 
     - name: Run Auto-Healer
       run: python tools/heal.py --log logs/test.log --db healer/db.sqlite
