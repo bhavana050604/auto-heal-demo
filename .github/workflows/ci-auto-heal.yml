@@ -32,6 +32,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Python dependencies
+        run: pip install requests
+
+
       - name: Run Auto-Healer
         if: github.repository != ''  # Prevent error if repo not available
         env:
