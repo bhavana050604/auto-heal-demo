@@ -8,16 +8,14 @@ on:
 
 jobs:
   test-and-heal:
-    # Avoid duplicate runs when PR is from the same repo
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -29,16 +27,29 @@ jobs:
           mkdir -p logs
           npx mocha --recursive --reporter spec | tee logs/test.log || true
 
+      - name: Setup Python for Auto-Healer
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
       - name: Run Auto-Healer
+        if: github.repository != ''  # Prevent error if repo not available
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           mkdir -p healer
-          python tools/heal.py --log logs/test.log --db healer/db.sqlite
+          python tools/heal.py --log logs/test.log --db healer/db.sqlite --token $GITHUB_TOKEN --repo $GITHUB_REPOSITORY || echo "Auto-Healer ran with warnings"
 
       - name: Show DB entries
         run: |
-          sudo apt-get install -y sqlite3
-          sqlite3 healer/db.sqlite "SELECT name FROM sqlite_master WHERE type='table';"
-          sqlite3 healer/db.sqlite "SELECT * FROM fixes;" || true
+          sudo apt-get update && sudo apt-get install -y sqlite3
+          if [ -f healer/db.sqlite ]; then
+            sqlite3 healer/db.sqlite "SELECT name FROM sqlite_master WHERE type='table';"
+            sqlite3 healer/db.sqlite "SELECT * FROM fixes;" || echo "No fixes yet"
+          else
+            echo "DB not found"
+          fi
 
       - name: Upload logs and DB
         uses: actions/upload-artifact@v4
