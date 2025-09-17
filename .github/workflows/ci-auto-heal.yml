@@ -41,7 +41,7 @@ jobs:
           sqlite3 healer/db.sqlite "SELECT * FROM fixes;" || true
 
       - name: Upload logs and DB
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: healer-artifacts
           path: |
