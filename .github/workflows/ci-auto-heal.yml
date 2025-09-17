@@ -25,7 +25,7 @@ jobs:
       - name: Run tests and save log
         run: |
           mkdir -p logs
-          npx mocha --recursive --reporter spec | tee logs/test.log || true
+          npx mocha --recursive --reporter spec | tee logs/test.log
 
       - name: Setup Python for Auto-Healer
         uses: actions/setup-python@v4
