@@ -1,30 +1,49 @@
-name: CI Auto-Heal Demo
+name: test-and-heal
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test-and-heal:
+    # Avoid duplicate runs when PR is from the same repo
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Run tests (allow failure)
-      run: node node_modules/.bin/mocha --recursive --reporter spec
-      continue-on-error: true
+      - name: Run tests and save log
+        run: |
+          mkdir -p logs
+          npx mocha --recursive --reporter spec | tee logs/test.log || true
 
-    - name: Run Auto-Healer
-      run: python tools/heal.py --log logs/test.log --db healer/db.sqlite
+      - name: Run Auto-Healer
+        run: |
+          mkdir -p healer
+          python tools/heal.py --log logs/test.log --db healer/db.sqlite
+
+      - name: Show DB entries
+        run: |
+          sudo apt-get install -y sqlite3
+          sqlite3 healer/db.sqlite "SELECT name FROM sqlite_master WHERE type='table';"
+          sqlite3 healer/db.sqlite "SELECT * FROM fixes;" || true
+
+      - name: Upload logs and DB
+        uses: actions/upload-artifact@v3
+        with:
+          name: healer-artifacts
+          path: |
+            logs/test.log
+            healer/db.sqlite
